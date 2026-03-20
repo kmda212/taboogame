@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1a1a2e" />
+  <title>Taboo! 🎯</title>
+  <style>
+    /* ── Reset & Base ──────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #1a1a2e;
+      --surface:  #16213e;
+      --card:     #0f3460;
+      --accent:   #e94560;
+      --green:    #27ae60;
+      --orange:   #e67e22;
+      --text:     #eaeaea;
+      --muted:    #8892a4;
+      --radius:   16px;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+
+    /* ── Screens ───────────────────────────────────────────────────── */
+    .screen { display: none; min-height: 100vh; min-height: 100dvh; }
+    .screen.active { display: flex; flex-direction: column; }
+
+    /* ── Buttons ───────────────────────────────────────────────────── */
+    .btn {
+      display: block; width: 100%;
+      padding: 16px; border: none; border-radius: var(--radius);
+      font-size: 1.1rem; font-weight: 700; cursor: pointer;
+      transition: transform 0.1s, opacity 0.1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active { transform: scale(0.96); opacity: 0.85; }
+    .btn-primary   { background: var(--accent);  color: #fff; }
+    .btn-green     { background: var(--green);   color: #fff; }
+    .btn-orange    { background: var(--orange);  color: #fff; }
+    .btn-ghost     { background: transparent; border: 2px solid var(--muted); color: var(--muted); }
+
+    /* ══════════════════════════════════════════════════════════════════
+       HOME SCREEN
+    ══════════════════════════════════════════════════════════════════ */
+    #homeScreen {
+      justify-content: flex-start;
+      padding: 28px 20px 32px;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .home-header { text-align: center; }
+    .home-header h1 { font-size: 3rem; letter-spacing: -1px; }
+    .home-header p  { color: var(--muted); font-size: 1rem; margin-top: 4px; }
+
+    /* Difficulty pills */
+    .section-label {
+      font-size: 0.75rem; text-transform: uppercase;
+      letter-spacing: 1.5px; color: var(--muted); margin-bottom: 10px;
+    }
+    .diff-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    }
+    .diff-pill {
+      padding: 14px 8px; border: 2px solid transparent;
+      border-radius: 12px; text-align: center; cursor: pointer;
+      background: var(--surface); transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .diff-pill .d-icon { font-size: 1.8rem; display: block; margin-bottom: 4px; }
+    .diff-pill .d-label { font-size: 0.85rem; font-weight: 700; }
+    .diff-pill .d-count { font-size: 0.7rem; color: var(--muted); }
+    .diff-pill.selected-easy   { border-color: #27ae60; background: rgba(39,174,96,0.15); }
+    .diff-pill.selected-medium { border-color: #e67e22; background: rgba(230,126,34,0.15); }
+    .diff-pill.selected-hard   { border-color: #e94560; background: rgba(233,69,96,0.15); }
+
+    /* Teams toggle */
+    .toggle-row {
+      display: flex; gap: 8px;
+    }
+    .toggle-btn {
+      flex: 1; padding: 12px 8px; border: 2px solid var(--surface);
+      border-radius: 12px; text-align: center; cursor: pointer;
+      background: var(--surface); font-size: 0.9rem; font-weight: 600;
+      transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+    }
+    .toggle-btn.selected { border-color: var(--accent); background: rgba(233,69,96,0.15); color: var(--accent); }
+
+    /* Timer pills */
+    .timer-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+    .timer-pill {
+      flex: 1; min-width: 60px; padding: 12px 6px;
+      border: 2px solid var(--surface); border-radius: 12px;
+      text-align: center; cursor: pointer; background: var(--surface);
+      font-size: 0.95rem; font-weight: 700; transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .timer-pill.selected { border-color: #c0a000; background: rgba(192,160,0,0.15); color: #e8c800; }
+
+    /* How to play */
+    .howto {
+      background: var(--surface); border-radius: var(--radius);
+      padding: 16px; font-size: 0.88rem; line-height: 1.8; color: var(--muted);
+    }
+    .howto h3 { color: var(--text); font-size: 0.95rem; margin-bottom: 10px; }
+    .howto-step { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; }
+    .howto-num {
+      background: var(--accent); color: #fff; border-radius: 50%;
+      width: 22px; height: 22px; font-size: 0.72rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+
+    /* ══════════════════════════════════════════════════════════════════
+       GAME SCREEN
+    ══════════════════════════════════════════════════════════════════ */
+    #gameScreen { padding: 0; }
+
+    /* Top bar */
+    .game-topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; background: var(--surface);
+      border-bottom: 2px solid rgba(255,255,255,0.06);
+    }
+    .team-badge {
+      padding: 6px 14px; border-radius: 20px;
+      font-size: 0.85rem; font-weight: 700; letter-spacing: 0.5px;
+    }
+    .score-display { font-size: 1.5rem; font-weight: 900; text-align: center; }
+    .score-display span { display: block; font-size: 0.65rem; font-weight: 400; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+    /* Timer */
+    .timer-wrap { display: flex; align-items: center; justify-content: center; padding: 18px 16px 0; }
+    .timer-ring-wrap { position: relative; width: 90px; height: 90px; }
+    .timer-ring-wrap svg { transform: rotate(-90deg); }
+    .timer-ring-bg { fill: none; stroke: var(--surface); stroke-width: 6; }
+    .timer-ring-fill { fill: none; stroke: var(--green); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 0.5s; }
+    .timer-num {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem; font-weight: 900;
+    }
+
+    /* Card */
+    .card-wrap { flex: 1; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+
+    .target-card {
+      background: var(--card); border-radius: var(--radius);
+      padding: 24px 20px; text-align: center;
+      border: 2px solid rgba(255,255,255,0.08);
+    }
+    .target-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); margin-bottom: 8px; }
+    .target-word  { font-size: 2.2rem; font-weight: 900; letter-spacing: -0.5px; line-height: 1.1; }
+
+    .taboo-card {
+      background: rgba(233,69,96,0.1); border: 2px solid rgba(233,69,96,0.3);
+      border-radius: var(--radius); padding: 16px 20px;
+    }
+    .taboo-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 2px; color: var(--accent); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .taboo-list  { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+    .taboo-list li {
+      font-size: 1.1rem; font-weight: 600; padding: 6px 12px;
+      background: rgba(233,69,96,0.12); border-radius: 8px;
+      border-left: 3px solid var(--accent);
+    }
+
+    /* Card counter */
+    .card-counter { text-align: center; font-size: 0.78rem; color: var(--muted); }
+
+    /* Action buttons */
+    .action-btns {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px; padding: 0 16px 24px;
+    }
+    .btn-skip    { background: #2c3e50; color: var(--text); font-size: 1.1rem; padding: 20px 8px; }
+    .btn-correct { background: var(--green); font-size: 1.1rem; padding: 20px 8px; }
+    .skip-label, .correct-label { display: block; font-size: 0.7rem; font-weight: 400; opacity: 0.7; margin-top: 2px; }
+
+    /* Feedback flash */
+    .feedback-flash {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      font-size: 3rem; font-weight: 900; z-index: 100; pointer-events: none;
+      opacity: 0; transition: opacity 0.15s;
+    }
+    .feedback-flash.show { opacity: 1; }
+
+    /* ══════════════════════════════════════════════════════════════════
+       RESULTS SCREEN
+    ══════════════════════════════════════════════════════════════════ */
+    #resultsScreen {
+      align-items: center; justify-content: center;
+      padding: 28px 20px; gap: 20px; text-align: center;
+    }
+
+    .results-emoji { font-size: 4rem; }
+    .results-title { font-size: 2rem; font-weight: 900; }
+
+    .scores-wrap { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+    .score-card {
+      background: var(--surface); border-radius: var(--radius);
+      padding: 20px 24px; text-align: center;
+    }
+    .score-card .sc-team { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+    .score-card .sc-num  { font-size: 3rem; font-weight: 900; line-height: 1; }
+    .score-card .sc-sub  { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+    .score-card.winner   { border: 2px solid gold; }
+    .winner-badge { font-size: 1.1rem; font-weight: 700; color: gold; margin-top: 6px; }
+
+    .results-btns { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     HOME SCREEN
+══════════════════════════════════════════════════════════════════ -->
+<div id="homeScreen" class="screen active">
+
+  <div class="home-header">
+    <h1>🎯 Taboo!</h1>
+    <p id="homeSubtitle">Say it without saying it!</p>
+  </div>
+
+  <!-- Difficulty -->
+  <div>
+    <div class="section-label">Choose Difficulty</div>
+    <div class="diff-grid">
+      <div class="diff-pill" id="pill-easy" onclick="selectDiff('easy')">
+        <span class="d-icon">🟢</span>
+        <span class="d-label">Easy</span>
+        <span class="d-count" id="cnt-easy">54 words</span>
+      </div>
+      <div class="diff-pill" id="pill-medium" onclick="selectDiff('medium')">
+        <span class="d-icon">🟡</span>
+        <span class="d-label">Medium</span>
+        <span class="d-count" id="cnt-medium">52 words</span>
+      </div>
+      <div class="diff-pill" id="pill-hard" onclick="selectDiff('hard')">
+        <span class="d-icon">🔴</span>
+        <span class="d-label">Hard</span>
+        <span class="d-count" id="cnt-hard">52 words</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Teams -->
+  <div>
+    <div class="section-label">Number of Teams</div>
+    <div class="toggle-row">
+      <div class="toggle-btn" id="t1btn" onclick="selectTeams(1)">👤 1 Team</div>
+      <div class="toggle-btn" id="t2btn" onclick="selectTeams(2)">👥 2 Teams</div>
+    </div>
+  </div>
+
+  <!-- Timer -->
+  <div>
+    <div class="section-label">Timer per Turn</div>
+    <div class="timer-grid" id="timerGrid"></div>
+  </div>
+
+  <!-- How to play -->
+  <div class="howto">
+    <h3>📖 How to Play</h3>
+    <div class="howto-step"><div class="howto-num">1</div><div>One player sees the card and describes the <strong>TOP WORD</strong> to their team</div></div>
+    <div class="howto-step"><div class="howto-num">2</div><div><strong>❌ NEVER say</strong> any of the 5 taboo words below it — or you lose the point!</div></div>
+    <div class="howto-step"><div class="howto-num">3</div><div>Tap <strong>✓ Got It!</strong> when your team guesses correctly, <strong>✗ Skip</strong> to pass</div></div>
+    <div class="howto-step"><div class="howto-num">4</div><div>Score as many cards as you can before the timer runs out!</div></div>
+  </div>
+
+  <button class="btn btn-primary" onclick="startGame()">▶ Start Game</button>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     GAME SCREEN
+══════════════════════════════════════════════════════════════════ -->
+<div id="gameScreen" class="screen">
+
+  <!-- Top bar -->
+  <div class="game-topbar">
+    <div class="team-badge" id="teamBadge">Team A</div>
+    <div class="score-display" id="scoreDisplay">
+      0
+      <span>score</span>
+    </div>
+    <button class="btn btn-ghost" style="width:auto;padding:8px 14px;font-size:0.8rem" onclick="endGame()">End</button>
+  </div>
+
+  <!-- Timer -->
+  <div class="timer-wrap">
+    <div class="timer-ring-wrap">
+      <svg width="90" height="90" viewBox="0 0 90 90">
+        <circle class="timer-ring-bg"   cx="45" cy="45" r="39"/>
+        <circle class="timer-ring-fill" id="timerRing" cx="45" cy="45" r="39"
+                stroke-dasharray="245" stroke-dashoffset="0"/>
+      </svg>
+      <div class="timer-num" id="timerNum">60</div>
+    </div>
+  </div>
+
+  <!-- Card -->
+  <div class="card-wrap">
+    <div class="target-card">
+      <div class="target-label">Guess this word</div>
+      <div class="target-word" id="targetWord">—</div>
+    </div>
+
+    <div class="taboo-card">
+      <div class="taboo-label">❌ Don't say these words</div>
+      <ul class="taboo-list" id="tabooList"></ul>
+    </div>
+
+    <div class="card-counter" id="cardCounter"></div>
+  </div>
+
+  <!-- Action buttons -->
+  <div class="action-btns">
+    <button class="btn btn-skip" onclick="skipCard()">
+      ✗ Skip
+      <span class="skip-label">No point</span>
+    </button>
+    <button class="btn btn-correct" onclick="correctCard()">
+      ✓ Got It!
+      <span class="correct-label">+1 point</span>
+    </button>
+  </div>
+
+  <!-- Feedback flash -->
+  <div class="feedback-flash" id="feedbackFlash"></div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     RESULTS SCREEN
+══════════════════════════════════════════════════════════════════ -->
+<div id="resultsScreen" class="screen">
+  <div class="results-emoji" id="resultsEmoji">🏆</div>
+  <div class="results-title" id="resultsTitle">Time's Up!</div>
+  <div id="scoresWrap" class="scores-wrap"></div>
+  <div class="results-btns">
+    <button class="btn btn-green"  onclick="nextTeamTurn()">▶ Next Team's Turn</button>
+    <button class="btn btn-primary" onclick="showHome()">🏠 New Game</button>
+  </div>
+</div>
+
+<!-- ── Word banks (loaded via script tags — no server needed) ── -->
+<script src="words/easy.js"></script>
+<script src="words/medium.js"></script>
+<script src="words/hard.js"></script>
+<script src="config.js"></script>
+
+<script>
+"use strict";
+
+// ── State ────────────────────────────────────────────────────────────────
+const G = {
+  difficulty:  CONFIG.defaultDifficulty,
+  numTeams:    1,
+  timer:       CONFIG.defaultTimer,
+  teamIndex:   0,
+  scores:      [0, 0],
+  deck:        [],
+  deckIdx:     0,
+  cardNum:     0,
+  interval:    null,
+  timeLeft:    0,
+  running:     false,
+};
+
+const WORDS = { easy: WORDS_EASY, medium: WORDS_MEDIUM, hard: WORDS_HARD };
+const CIRC  = 2 * Math.PI * 39; // circumference for r=39
+
+// ── DOM shortcuts ─────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+
+// ── Home screen setup ────────────────────────────────────────────────────
+function initHome() {
+  // Word counts
+  $('cnt-easy').textContent   = WORDS.easy.length   + ' words';
+  $('cnt-medium').textContent = WORDS.medium.length  + ' words';
+  $('cnt-hard').textContent   = WORDS.hard.length    + ' words';
+
+  // Subtitle from config
+  $('homeSubtitle').textContent = CONFIG.subtitle;
+
+  // Timer pills
+  const tg = $('timerGrid');
+  tg.innerHTML = '';
+  CONFIG.timerOptions.forEach(t => {
+    const d = document.createElement('div');
+    d.className = 'timer-pill' + (t === G.timer ? ' selected' : '');
+    d.textContent = t + 's';
+    d.onclick = () => { G.timer = t; document.querySelectorAll('.timer-pill').forEach(p => p.classList.remove('selected')); d.classList.add('selected'); };
+    tg.appendChild(d);
+  });
+
+  selectDiff(G.difficulty);
+  selectTeams(G.numTeams);
+}
+
+function selectDiff(d) {
+  G.difficulty = d;
+  ['easy','medium','hard'].forEach(k => {
+    $('pill-' + k).className = 'diff-pill' + (k === d ? ' selected-' + k : '');
+  });
+}
+
+function selectTeams(n) {
+  G.numTeams = n;
+  $('t1btn').className = 'toggle-btn' + (n === 1 ? ' selected' : '');
+  $('t2btn').className = 'toggle-btn' + (n === 2 ? ' selected' : '');
+  // Hide next-team button in results if 1 team
+  const btn = document.querySelector('#resultsScreen .btn-green');
+  if (btn) btn.style.display = n === 2 ? '' : 'none';
+}
+
+// ── Game start ────────────────────────────────────────────────────────────
+function startGame() {
+  const pool = [...WORDS[G.difficulty]];
+  // Shuffle
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  G.deck    = pool;
+  G.deckIdx = 0;
+  G.cardNum = 0;
+
+  if (G.teamIndex === 0) G.scores = [0, 0]; // reset on first team's turn
+
+  showScreen('gameScreen');
+  updateTeamBadge();
+  showNextCard();
+  startTimer();
+}
+
+function updateTeamBadge() {
+  const badge = $('teamBadge');
+  const name  = G.numTeams === 1 ? '🎯 Playing' : CONFIG.teamNames[G.teamIndex] + ' 🎮';
+  badge.textContent = name;
+  badge.style.background = CONFIG.teamColors[G.teamIndex] + '33';
+  badge.style.color       = CONFIG.teamColors[G.teamIndex];
+  badge.style.border      = '2px solid ' + CONFIG.teamColors[G.teamIndex];
+  updateScoreDisplay();
+}
+
+function updateScoreDisplay() {
+  $('scoreDisplay').innerHTML = G.scores[G.teamIndex] + '<span>score</span>';
+}
+
+// ── Timer ─────────────────────────────────────────────────────────────────
+function startTimer() {
+  G.timeLeft = G.timer;
+  G.running  = true;
+  clearInterval(G.interval);
+  renderTimer();
+  G.interval = setInterval(() => {
+    G.timeLeft--;
+    renderTimer();
+    if (G.timeLeft <= 0) {
+      clearInterval(G.interval);
+      G.running = false;
+      endGame();
+    }
+  }, 1000);
+}
+
+function renderTimer() {
+  const pct    = G.timeLeft / G.timer;
+  const offset = CIRC * (1 - pct);
+  const ring   = $('timerRing');
+  ring.style.strokeDashoffset = offset;
+  $('timerNum').textContent   = G.timeLeft;
+
+  // Colour: green → orange → red
+  if (pct > 0.5)       ring.style.stroke = '#27ae60';
+  else if (pct > 0.25) ring.style.stroke = '#e67e22';
+  else                 ring.style.stroke = '#e94560';
+
+  $('timerNum').style.color = pct <= 0.25 ? '#e94560' : 'var(--text)';
+}
+
+// ── Cards ─────────────────────────────────────────────────────────────────
+function showNextCard() {
+  if (G.deckIdx >= G.deck.length) {
+    // All cards used — reshuffle and continue
+    for (let i = G.deck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [G.deck[i], G.deck[j]] = [G.deck[j], G.deck[i]];
+    }
+    G.deckIdx = 0;
+  }
+
+  const card = G.deck[G.deckIdx];
+  G.cardNum++;
+
+  $('targetWord').textContent = card.word;
+
+  const ul = $('tabooList');
+  ul.innerHTML = '';
+  card.taboo.slice(0, CONFIG.tabooCount).forEach(t => {
+    const li = document.createElement('li');
+    li.textContent = t.toUpperCase();
+    ul.appendChild(li);
+  });
+
+  $('cardCounter').textContent = `Card ${G.cardNum} of ${G.deck.length}`;
+}
+
+function correctCard() {
+  if (!G.running) return;
+  G.scores[G.teamIndex]++;
+  updateScoreDisplay();
+  G.deckIdx++;
+  flashFeedback('✅');
+  showNextCard();
+}
+
+function skipCard() {
+  if (!G.running) return;
+  if (CONFIG.skipPenalty && G.scores[G.teamIndex] > 0) G.scores[G.teamIndex]--;
+  updateScoreDisplay();
+  G.deckIdx++;
+  flashFeedback('⏭️');
+  showNextCard();
+}
+
+function flashFeedback(emoji) {
+  const el = $('feedbackFlash');
+  el.textContent = emoji;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 400);
+}
+
+// ── End / Results ─────────────────────────────────────────────────────────
+function endGame() {
+  clearInterval(G.interval);
+  G.running = false;
+  showResults();
+}
+
+function showResults() {
+  showScreen('resultsScreen');
+
+  const wrap = $('scoresWrap');
+  wrap.innerHTML = '';
+
+  if (G.numTeams === 1) {
+    // Single team result
+    $('resultsEmoji').textContent = G.scores[0] >= 5 ? '🏆' : '🎯';
+    $('resultsTitle').textContent = "Time's Up!";
+    const sc = makeScoreCard(0, false);
+    wrap.appendChild(sc);
+    document.querySelector('#resultsScreen .btn-green').style.display = 'none';
+  } else {
+    // Two teams — show after both have played
+    const bothPlayed = G.teamIndex === 1;
+
+    if (!bothPlayed) {
+      $('resultsEmoji').textContent = '⏱️';
+      $('resultsTitle').textContent = CONFIG.teamNames[0] + ' done!';
+      const sc = makeScoreCard(0, false);
+      wrap.appendChild(sc);
+      document.querySelector('#resultsScreen .btn-green').style.display = '';
+    } else {
+      const winner = G.scores[0] > G.scores[1] ? 0 : G.scores[1] > G.scores[0] ? 1 : -1;
+      $('resultsEmoji').textContent = '🏆';
+      $('resultsTitle').textContent = winner === -1 ? "It's a Tie! 🤝" : CONFIG.teamNames[winner] + ' Wins! 🎉';
+      wrap.appendChild(makeScoreCard(0, winner === 0));
+      wrap.appendChild(makeScoreCard(1, winner === 1));
+      document.querySelector('#resultsScreen .btn-green').style.display = 'none';
+    }
+  }
+}
+
+function makeScoreCard(teamIdx, isWinner) {
+  const div = document.createElement('div');
+  div.className = 'score-card' + (isWinner ? ' winner' : '');
+  div.style.borderColor = isWinner ? 'gold' : CONFIG.teamColors[teamIdx] + '66';
+  div.innerHTML = `
+    <div class="sc-team">${G.numTeams === 1 ? 'Your Score' : CONFIG.teamNames[teamIdx]}</div>
+    <div class="sc-num" style="color:${CONFIG.teamColors[teamIdx]}">${G.scores[teamIdx]}</div>
+    <div class="sc-sub">${G.scores[teamIdx] === 1 ? 'card' : 'cards'} guessed</div>
+    ${isWinner ? '<div class="winner-badge">🏆 Winner!</div>' : ''}
+  `;
+  return div;
+}
+
+function nextTeamTurn() {
+  // Switch to Team B
+  G.teamIndex = 1;
+  startGame();
+}
+
+function showHome() {
+  G.teamIndex = 0;
+  G.scores    = [0, 0];
+  showScreen('homeScreen');
+  initHome();
+}
+
+// ── Screen helper ─────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  initHome();
+});
+</script>
+
+</body>
+</html>
